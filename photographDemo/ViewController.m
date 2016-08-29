@@ -28,6 +28,7 @@
 //图像预览层，实时显示捕获的图像
 @property(nonatomic)AVCaptureVideoPreviewLayer *previewLayer;
 
+@property (nonatomic)UIButton *wineButton;
 @property (nonatomic)UIButton *PhotoButton;
 @property (nonatomic)UIButton *flashButton;
 @property (nonatomic)UIImageView *imageView;
@@ -55,21 +56,36 @@
     // Do any additional setup after loading the view, typically from a nib.
 }
 - (void)customUI{
+    //底部背景颜色
+    UIView *footView = [[UIView alloc] initWithFrame:CGRectMake(0, kScreenHeight*0.7, kScreenWidth, kScreenHeight*0.3)];
+    footView.backgroundColor = [UIColor yellowColor];
+    [self.view addSubview:footView];
+    
     _PhotoButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _PhotoButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight-100, 60, 60);
+    _PhotoButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight * 0.5+120, 60, 60);
     [_PhotoButton setImage:[UIImage imageNamed:@"photograph"] forState: UIControlStateNormal];
     [_PhotoButton setImage:[UIImage imageNamed:@"photograph_Select"] forState:UIControlStateNormal];
     [_PhotoButton addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_PhotoButton];
     
-    _focusView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 80, 80)];
-    _focusView.layer.borderWidth = 1.0;
-    _focusView.layer.borderColor =[UIColor greenColor].CGColor;
-    _focusView.backgroundColor = [UIColor clearColor];
-    [self.view addSubview:_focusView];
-    _focusView.hidden = YES;
+    //自定义点击事件
+    _wineButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    _wineButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight*1/2.0+60, 60, 60);
+    [_wineButton setTitle:@"点我" forState:UIControlStateNormal];
+    _wineButton.titleLabel.textAlignment = NSTextAlignmentCenter;
+    [_wineButton addTarget:self action:@selector(click) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:_wineButton];
+    
+    
+//    _focusView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 80, 80)];
+//    _focusView.layer.borderWidth = 1.0;
+//    _focusView.layer.borderColor =[UIColor greenColor].CGColor;
+//    _focusView.backgroundColor = [UIColor clearColor];
+//    [self.view addSubview:_focusView];
+//    _focusView.hidden = YES;
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    leftButton.backgroundColor = [UIColor orangeColor];
     leftButton.frame = CGRectMake(kScreenWidth*1/4.0-30, kScreenHeight-100, 60, 60);
     [leftButton setTitle:@"取消" forState:UIControlStateNormal];
     leftButton.titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -78,6 +94,7 @@
     
     UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
     rightButton.frame = CGRectMake(kScreenWidth*3/4.0-60, kScreenHeight-100, 60, 60);
+    rightButton.backgroundColor = [UIColor greenColor];
     [rightButton setTitle:@"切换" forState:UIControlStateNormal];
     rightButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [rightButton addTarget:self action:@selector(changeCamera) forControlEvents:UIControlEventTouchUpInside];
@@ -122,7 +139,7 @@
     
     //使用self.session，初始化预览层，self.session负责驱动input进行信息的采集，layer负责把图像渲染显示
     self.previewLayer = [[AVCaptureVideoPreviewLayer alloc]initWithSession:self.session];
-    self.previewLayer.frame = CGRectMake(0, 0, kScreenWidth, kScreenHeight);
+    self.previewLayer.frame = CGRectMake(0, 0, kScreenWidth, kScreenHeight*0.7);
     self.previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     [self.view.layer addSublayer:self.previewLayer];
     
@@ -230,15 +247,15 @@
         }
         
         [self.device unlockForConfiguration];
-        _focusView.center = point;
-        _focusView.hidden = NO;
+//        _focusView.center = point;
+//        _focusView.hidden = NO;
         [UIView animateWithDuration:0.3 animations:^{
-            _focusView.transform = CGAffineTransformMakeScale(1.25, 1.25);
+//            _focusView.transform = CGAffineTransformMakeScale(1.25, 1.25);
         }completion:^(BOOL finished) {
             [UIView animateWithDuration:0.5 animations:^{
-                _focusView.transform = CGAffineTransformIdentity;
+//                _focusView.transform = CGAffineTransformIdentity;
             } completion:^(BOOL finished) {
-                _focusView.hidden = YES;
+//                _focusView.hidden = YES;
             }];
         }];
     }
@@ -324,6 +341,15 @@
     }
 }
 
+-(void)click{
+    NSString *msg = @"You click me";
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"测试点击"
+                                                    message:msg
+                                                   delegate:self
+                                          cancelButtonTitle:@"确定"
+                                          otherButtonTitles:nil];
+    [alert show];
+}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
