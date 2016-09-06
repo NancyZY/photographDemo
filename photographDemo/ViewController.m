@@ -10,7 +10,9 @@
 #define kScreenHeight kScreenBounds.size.height*1.0
 #import "ViewController.h"
 #import <AVFoundation/AVFoundation.h>
-@interface ViewController ()<AVCaptureMetadataOutputObjectsDelegate,UIAlertViewDelegate>
+@interface ViewController ()<AVCaptureMetadataOutputObjectsDelegate,UIAlertViewDelegate,
+                        UIImagePickerControllerDelegate,UINavigationControllerDelegate>
+
 //捕获设备，通常是前置摄像头，后置摄像头，麦克风（音频输入）
 @property(nonatomic)AVCaptureDevice *device;
 
@@ -37,6 +39,7 @@
 @property (nonatomic)UIImage *image;
 
 @property (nonatomic)BOOL canCa;
+@property (nonatomic) UIImagePickerController *imagePicker;
 @end
 
 @implementation ViewController
@@ -57,12 +60,12 @@
 }
 - (void)customUI{
     //底部背景颜色
-    UIView *footView = [[UIView alloc] initWithFrame:CGRectMake(0, kScreenHeight*0.7, kScreenWidth, kScreenHeight*0.3)];
-    footView.backgroundColor = [UIColor yellowColor];
+    UIView *footView = [[UIView alloc] initWithFrame:CGRectMake(0, kScreenHeight*0.8, kScreenWidth, kScreenHeight*0.2)];
+    footView.backgroundColor= [UIColor colorWithRed:(175/255.0) green:(18/255.0) blue:(38/255.0) alpha:1] ;
     [self.view addSubview:footView];
     
     _PhotoButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _PhotoButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight * 0.5+120, 60, 60);
+    _PhotoButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight-80, 60, 60);
     [_PhotoButton setImage:[UIImage imageNamed:@"photograph"] forState: UIControlStateNormal];
     [_PhotoButton setImage:[UIImage imageNamed:@"photograph_Select"] forState:UIControlStateNormal];
     [_PhotoButton addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
@@ -77,31 +80,29 @@
     [self.view addSubview:_wineButton];
     
     
-//    _focusView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 80, 80)];
-//    _focusView.layer.borderWidth = 1.0;
-//    _focusView.layer.borderColor =[UIColor greenColor].CGColor;
-//    _focusView.backgroundColor = [UIColor clearColor];
-//    [self.view addSubview:_focusView];
-//    _focusView.hidden = YES;
+    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(28, 35, kScreenWidth-28*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+    myBox.layer.borderColor = [UIColor whiteColor].CGColor;
+    myBox.layer.borderWidth = 2.0;
+    [self.view addSubview:myBox];
+    
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    leftButton.backgroundColor = [UIColor orangeColor];
-    leftButton.frame = CGRectMake(kScreenWidth*1/4.0-30, kScreenHeight-100, 60, 60);
+    leftButton.frame = CGRectMake(kScreenWidth*1/4.0-30, kScreenHeight-80, 60, 60);
     [leftButton setTitle:@"取消" forState:UIControlStateNormal];
     leftButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [leftButton addTarget:self action:@selector(cancle) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:leftButton];
     
     UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    rightButton.frame = CGRectMake(kScreenWidth*3/4.0-60, kScreenHeight-100, 60, 60);
-    rightButton.backgroundColor = [UIColor greenColor];
-    [rightButton setTitle:@"切换" forState:UIControlStateNormal];
+    rightButton.frame = CGRectMake(kScreenWidth*3/4.0-60, kScreenHeight-80, 60, 60);
+    
+    [rightButton setTitle:@"相册" forState:UIControlStateNormal];
     rightButton.titleLabel.textAlignment = NSTextAlignmentCenter;
-    [rightButton addTarget:self action:@selector(changeCamera) forControlEvents:UIControlEventTouchUpInside];
+    [rightButton addTarget:self action:@selector(pickImageFromAlbum) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:rightButton];
     
     _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _flashButton.frame = CGRectMake(kScreenWidth-80, kScreenHeight-100, 80, 60);
+    _flashButton.frame = CGRectMake(kScreenWidth-80, kScreenHeight-80, 80, 60);
     [_flashButton setTitle:@"闪光灯关" forState:UIControlStateNormal];
     [_flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_flashButton];
@@ -139,7 +140,7 @@
     
     //使用self.session，初始化预览层，self.session负责驱动input进行信息的采集，layer负责把图像渲染显示
     self.previewLayer = [[AVCaptureVideoPreviewLayer alloc]initWithSession:self.session];
-    self.previewLayer.frame = CGRectMake(0, 0, kScreenWidth, kScreenHeight*0.7);
+    self.previewLayer.frame = CGRectMake(0, 0, kScreenWidth, kScreenHeight*0.8);
     self.previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     [self.view.layer addSublayer:self.previewLayer];
     
@@ -175,51 +176,62 @@
         [_device unlockForConfiguration];
     }
 }
-- (void)changeCamera{
-    NSUInteger cameraCount = [[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo] count];
-    if (cameraCount > 1) {
-        NSError *error;
-        
-        CATransition *animation = [CATransition animation];
-        
-        animation.duration = .5f;
-        
-        animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-        
-        animation.type = @"oglFlip";
-        AVCaptureDevice *newCamera = nil;
-        AVCaptureDeviceInput *newInput = nil;
-        AVCaptureDevicePosition position = [[_input device] position];
-        if (position == AVCaptureDevicePositionFront){
-            newCamera = [self cameraWithPosition:AVCaptureDevicePositionBack];
-            animation.subtype = kCATransitionFromLeft;
-        }
-        else {
-            newCamera = [self cameraWithPosition:AVCaptureDevicePositionFront];
-            animation.subtype = kCATransitionFromRight;
-        }
-        
-        newInput = [AVCaptureDeviceInput deviceInputWithDevice:newCamera error:nil];
-        [self.previewLayer addAnimation:animation forKey:nil];
-        if (newInput != nil) {
-            [self.session beginConfiguration];
-            [self.session removeInput:_input];
-            if ([self.session canAddInput:newInput]) {
-                [self.session addInput:newInput];
-                self.input = newInput;
-                
-            } else {
-                [self.session addInput:self.input];
-            }
-            
-            [self.session commitConfiguration];
-            
-        } else if (error) {
-            NSLog(@"toggle carema failed, error = %@", error);
-        }
-        
-    }
+//- (void)changeCamera{
+//    NSUInteger cameraCount = [[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo] count];
+//    if (cameraCount > 1) {
+//        NSError *error;
+//        
+//        CATransition *animation = [CATransition animation];
+//        
+//        animation.duration = .5f;
+//        
+//        animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+//        
+//        animation.type = @"oglFlip";
+//        AVCaptureDevice *newCamera = nil;
+//        AVCaptureDeviceInput *newInput = nil;
+//        AVCaptureDevicePosition position = [[_input device] position];
+//        if (position == AVCaptureDevicePositionFront){
+//            newCamera = [self cameraWithPosition:AVCaptureDevicePositionBack];
+//            animation.subtype = kCATransitionFromLeft;
+//        }
+//        else {
+//            newCamera = [self cameraWithPosition:AVCaptureDevicePositionFront];
+//            animation.subtype = kCATransitionFromRight;
+//        }
+//        
+//        newInput = [AVCaptureDeviceInput deviceInputWithDevice:newCamera error:nil];
+//        [self.previewLayer addAnimation:animation forKey:nil];
+//        if (newInput != nil) {
+//            [self.session beginConfiguration];
+//            [self.session removeInput:_input];
+//            if ([self.session canAddInput:newInput]) {
+//                [self.session addInput:newInput];
+//                self.input = newInput;
+//                
+//            } else {
+//                [self.session addInput:self.input];
+//            }
+//            
+//            [self.session commitConfiguration];
+//            
+//        } else if (error) {
+//            NSLog(@"toggle carema failed, error = %@", error);
+//        }
+//        
+//    }
+//}
+
+-(void)pickImageFromAlbum{
+    _imagePicker = [[UIImagePickerController alloc] init];
+    _imagePicker.delegate=self;
+    _imagePicker.sourceType=UIImagePickerControllerSourceTypePhotoLibrary;
+    _imagePicker.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
+    _imagePicker.allowsEditing = YES;
+    [self presentViewController:_imagePicker animated:YES completion:nil];
+
 }
+
 - (AVCaptureDevice *)cameraWithPosition:(AVCaptureDevicePosition)position{
     NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
     for ( AVCaptureDevice *device in devices )
@@ -328,6 +340,29 @@
     }
     return YES;
 }
+
+#pragma mark -- 实现imagePicker的代理方法
+
+-(void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info
+{
+    //取得所选取的图片,原大小,可编辑等，info是选取的图片的信息字典
+    UIImage *selectImage = [info objectForKey:UIImagePickerControllerEditedImage];
+    
+    //设置图片进相框
+    self.image = selectImage;
+    
+    
+    self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
+    [self.view insertSubview:_imageView belowSubview:_PhotoButton];
+    self.imageView.layer.masksToBounds = YES;
+    self.imageView.image = _image;
+
+    
+    [picker dismissViewControllerAnimated:YES completion:^{
+        NSLog(@"模态返回") ;
+    }];
+}
+
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
     if (buttonIndex == 0 && alertView.tag == 100) {
         
