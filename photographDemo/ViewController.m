@@ -54,10 +54,8 @@
     }else{
         return;
     }
-    
-    
-    // Do any additional setup after loading the view, typically from a nib.
 }
+
 - (void)customUI{
     //底部背景颜色
     UIView *footView = [[UIView alloc] initWithFrame:CGRectMake(0, kScreenHeight*0.8, kScreenWidth, kScreenHeight*0.2)];
@@ -110,6 +108,7 @@
     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(focusGesture:)];
     [self.view addGestureRecognizer:tapGesture];
 }
+
 - (void)customCamera{
     self.view.backgroundColor = [UIColor whiteColor];
     
@@ -176,51 +175,6 @@
         [_device unlockForConfiguration];
     }
 }
-//- (void)changeCamera{
-//    NSUInteger cameraCount = [[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo] count];
-//    if (cameraCount > 1) {
-//        NSError *error;
-//        
-//        CATransition *animation = [CATransition animation];
-//        
-//        animation.duration = .5f;
-//        
-//        animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
-//        
-//        animation.type = @"oglFlip";
-//        AVCaptureDevice *newCamera = nil;
-//        AVCaptureDeviceInput *newInput = nil;
-//        AVCaptureDevicePosition position = [[_input device] position];
-//        if (position == AVCaptureDevicePositionFront){
-//            newCamera = [self cameraWithPosition:AVCaptureDevicePositionBack];
-//            animation.subtype = kCATransitionFromLeft;
-//        }
-//        else {
-//            newCamera = [self cameraWithPosition:AVCaptureDevicePositionFront];
-//            animation.subtype = kCATransitionFromRight;
-//        }
-//        
-//        newInput = [AVCaptureDeviceInput deviceInputWithDevice:newCamera error:nil];
-//        [self.previewLayer addAnimation:animation forKey:nil];
-//        if (newInput != nil) {
-//            [self.session beginConfiguration];
-//            [self.session removeInput:_input];
-//            if ([self.session canAddInput:newInput]) {
-//                [self.session addInput:newInput];
-//                self.input = newInput;
-//                
-//            } else {
-//                [self.session addInput:self.input];
-//            }
-//            
-//            [self.session commitConfiguration];
-//            
-//        } else if (error) {
-//            NSLog(@"toggle carema failed, error = %@", error);
-//        }
-//        
-//    }
-//}
 
 -(void)pickImageFromAlbum{
     _imagePicker = [[UIImagePickerController alloc] init];
@@ -259,15 +213,8 @@
         }
         
         [self.device unlockForConfiguration];
-//        _focusView.center = point;
-//        _focusView.hidden = NO;
-        [UIView animateWithDuration:0.3 animations:^{
-//            _focusView.transform = CGAffineTransformMakeScale(1.25, 1.25);
-        }completion:^(BOOL finished) {
-            [UIView animateWithDuration:0.5 animations:^{
-//                _focusView.transform = CGAffineTransformIdentity;
-            } completion:^(BOOL finished) {
-//                _focusView.hidden = YES;
+        [UIView animateWithDuration:0.3 animations:^{}completion:^(BOOL finished) {
+            [UIView animateWithDuration:0.5 animations:^{} completion:^(BOOL finished) {
             }];
         }];
     }
