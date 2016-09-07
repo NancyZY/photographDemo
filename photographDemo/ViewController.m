@@ -69,6 +69,11 @@
     [_PhotoButton addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_PhotoButton];
     
+    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+    myBox.layer.borderColor = [UIColor whiteColor].CGColor;
+    myBox.layer.borderWidth = 2.0;
+    [self.view addSubview:myBox];
+    
     //自定义点击事件
     _wineButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _wineButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight*1/2.0+60, 60, 60);
@@ -77,11 +82,17 @@
     [_wineButton addTarget:self action:@selector(click) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_wineButton];
     
+//    _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
+//    _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
+//    [_flashButton setTitle:@"闪光灯关" forState:UIControlStateNormal];
+//    [_flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
+//    [self.view addSubview:_flashButton];
     
-    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(28, 35, kScreenWidth-28*2, kScreenHeight-35*2-kScreenHeight*0.2)];
-    myBox.layer.borderColor = [UIColor whiteColor].CGColor;
-    myBox.layer.borderWidth = 2.0;
-    [self.view addSubview:myBox];
+    _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
+    [_flashButton setImage:[UIImage imageNamed:@"Flash"] forState: UIControlStateNormal];    
+    [_flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:_flashButton];
     
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -92,18 +103,14 @@
     [self.view addSubview:leftButton];
     
     UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    rightButton.frame = CGRectMake(kScreenWidth*3/4.0-60, kScreenHeight-80, 60, 60);
+    rightButton.frame = CGRectMake(kScreenWidth*3/4.0, kScreenHeight-80, 60, 60);
     
     [rightButton setTitle:@"相册" forState:UIControlStateNormal];
     rightButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [rightButton addTarget:self action:@selector(pickImageFromAlbum) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:rightButton];
     
-    _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _flashButton.frame = CGRectMake(kScreenWidth-80, kScreenHeight-80, 80, 60);
-    [_flashButton setTitle:@"闪光灯关" forState:UIControlStateNormal];
-    [_flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:_flashButton];
+    
     
     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(focusGesture:)];
     [self.view addGestureRecognizer:tapGesture];
@@ -269,10 +276,12 @@
                                           otherButtonTitles:nil];
     [alert show];
 }
+
 -(void)cancle{
     [self.imageView removeFromSuperview];
     [self.session startRunning];
 }
+
 #pragma mark - 检查相机权限
 - (BOOL)canUserCamear{
     AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
@@ -281,8 +290,7 @@
         alertView.tag = 100;
         [alertView show];
         return NO;
-    }
-    else{
+    }else{
         return YES;
     }
     return YES;
@@ -290,35 +298,62 @@
 
 #pragma mark -- 实现imagePicker的代理方法
 
--(void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info
-{
+-(void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info{
     //取得所选取的图片,原大小,可编辑等，info是选取的图片的信息字典
     UIImage *selectImage = [info objectForKey:UIImagePickerControllerEditedImage];
     
     //设置图片进相框
     self.image = selectImage;
     
-    
     self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
     [self.view insertSubview:_imageView belowSubview:_PhotoButton];
     self.imageView.layer.masksToBounds = YES;
     self.imageView.image = _image;
-
     
-    [picker dismissViewControllerAnimated:YES completion:^{
-        NSLog(@"模态返回") ;
-    }];
+    //设置image的尺寸
+    UIImage *resizedImage = [self thumbnailWithImageWithoutScale:selectImage size:CGSizeMake(480,640)];
+    
+    //对图片大小进行压缩
+    NSData *imgData = UIImageJPEGRepresentation(resizedImage, 0.5);
+    [picker dismissViewControllerAnimated:YES completion:NULL];
+}
+
+#pragma mark -- 缩略图
+- (UIImage *)thumbnailWithImageWithoutScale:(UIImage *)image size:(CGSize)asize
+{
+    UIImage *newimage;
+    if (nil == image) {
+        newimage = nil;
+    }else{
+        CGSize oldsize = image.size;
+        CGRect rect;
+        if (asize.width/asize.height > oldsize.width/oldsize.height) {
+            rect.size.width = asize.height*oldsize.width/oldsize.height;
+            rect.size.height = asize.height;
+            rect.origin.x = (asize.width - rect.size.width)/2;
+            rect.origin.y = 0;
+        }else{
+            rect.size.width = asize.width;
+            rect.size.height = asize.width*oldsize.height/oldsize.width;
+            rect.origin.x = 0;
+            rect.origin.y = (asize.height - rect.size.height)/2;
+        }
+        UIGraphicsBeginImageContext(asize);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, [[UIColor clearColor] CGColor]);
+        UIRectFill(CGRectMake(0, 0, asize.width, asize.height));//clear background
+        [image drawInRect:rect];
+        newimage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    }
+    return newimage;
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
     if (buttonIndex == 0 && alertView.tag == 100) {
-        
         NSURL * url = [NSURL URLWithString:UIApplicationOpenSettingsURLString];
-        
         if([[UIApplication sharedApplication] canOpenURL:url]) {
-            
             [[UIApplication sharedApplication] openURL:url];
-            
         }
     }
 }
