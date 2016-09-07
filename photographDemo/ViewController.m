@@ -8,10 +8,13 @@
 #define kScreenBounds   [UIScreen mainScreen].bounds
 #define kScreenWidth  kScreenBounds.size.width*1.0
 #define kScreenHeight kScreenBounds.size.height*1.0
+
 #import "ViewController.h"
 #import <AVFoundation/AVFoundation.h>
+
 @interface ViewController ()<AVCaptureMetadataOutputObjectsDelegate,UIAlertViewDelegate,
-                        UIImagePickerControllerDelegate,UINavigationControllerDelegate>
+UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
+}
 
 //捕获设备，通常是前置摄像头，后置摄像头，麦克风（音频输入）
 @property(nonatomic)AVCaptureDevice *device;
@@ -37,15 +40,25 @@
 @property (nonatomic)UIView *focusView;
 @property (nonatomic)BOOL isflashOn;
 @property (nonatomic)UIImage *image;
+@property (nonatomic)UISegmentedControl *segmentControl;
+@property (nonatomic)UIView *firstview;
+@property (nonatomic)UIView *secondview;
+@property (nonatomic)UIView *thirdview;
 
 @property (nonatomic)BOOL canCa;
 @property (nonatomic) UIImagePickerController *imagePicker;
+
+@property (nonatomic)NSArray *mySegments;
+
 @end
 
 @implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    _mySegments = [[NSArray alloc] initWithObjects: @"White",
+                   @"Yellow", @"Orange", nil];
+
     _canCa = [self canUserCamear];
     if (_canCa) {
         [self customCamera];
@@ -69,18 +82,17 @@
     [_PhotoButton addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_PhotoButton];
     
-    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
-    myBox.layer.borderColor = [UIColor whiteColor].CGColor;
-    myBox.layer.borderWidth = 2.0;
-    [self.view addSubview:myBox];
     
-    //自定义点击事件
-    _wineButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _wineButton.frame = CGRectMake(kScreenWidth*1/2.0-30, kScreenHeight*1/2.0+60, 60, 60);
-    [_wineButton setTitle:@"点我" forState:UIControlStateNormal];
-    _wineButton.titleLabel.textAlignment = NSTextAlignmentCenter;
-    [_wineButton addTarget:self action:@selector(click) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:_wineButton];
+    _segmentControl= [[UISegmentedControl alloc] initWithItems:_mySegments];
+    _segmentControl.frame = CGRectMake(kScreenWidth*1/3.0-30, kScreenHeight*1/2.0+60, 150.0f, 30.0f);
+    _segmentControl.tintColor = [UIColor whiteColor];
+    _segmentControl.layer.cornerRadius = 15.0;
+    [_segmentControl setSelectedSegmentIndex:1];
+    [_segmentControl addTarget:self action:@selector(valueChanged:)
+              forControlEvents:UIControlEventValueChanged];
+    [self secondview];
+    [self.view insertSubview:_segmentControl aboveSubview:_secondview];
+
     
     _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
@@ -305,19 +317,63 @@
     }
 }
 
--(void)click{
-    NSString *msg = @"You click me";
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"测试点击"
-                                                    message:msg
-                                                   delegate:self
-                                          cancelButtonTitle:@"确定"
-                                          otherButtonTitles:nil];
-    [alert show];
+- (void) valueChanged:(UISegmentedControl *)paramSender{
+    switch (paramSender.selectedSegmentIndex) {
+        case 0:{
+            [self.secondview removeFromSuperview];
+            [self.thirdview removeFromSuperview];
+            [self firstview];
+            NSLog(@"go first view");
+            break;
+        }
+        case 1:{
+            [self.firstview removeFromSuperview];
+            [self.thirdview removeFromSuperview];
+            [self secondview];
+            NSLog(@"go second view");
+            break;
+        }
+        case 2:{
+            [self.firstview removeFromSuperview];
+            [self.secondview removeFromSuperview];
+            [self thirdview];
+            NSLog(@"go third view");
+            break;
+        }
+    }
 }
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+
+-(UIView *)firstview {
+    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+    myBox.layer.borderColor = [UIColor whiteColor].CGColor;
+    myBox.layer.borderWidth = 2.0;
+    _firstview = myBox;
+    [self.view insertSubview:_firstview belowSubview:_segmentControl];
+    return _firstview;
+}
+
+-(UIView *)secondview{
+    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+    myBox.layer.borderColor = [UIColor yellowColor].CGColor;
+    myBox.layer.borderWidth = 2.0;
+    _secondview = myBox;
+    [self.view insertSubview:_secondview belowSubview:_segmentControl];
+    return _secondview;
+}
+-(UIView *)thirdview{
+    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+    myBox.layer.borderColor = [UIColor orangeColor].CGColor;
+    myBox.layer.borderWidth = 2.0;
+    _thirdview = myBox;
+    [self.view insertSubview:_thirdview belowSubview:_segmentControl];
+    
+    return _thirdview;
 }
 
 @end
