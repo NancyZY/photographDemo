@@ -82,12 +82,6 @@
     [_wineButton addTarget:self action:@selector(click) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_wineButton];
     
-//    _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
-//    _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
-//    [_flashButton setTitle:@"闪光灯关" forState:UIControlStateNormal];
-//    [_flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
-//    [self.view addSubview:_flashButton];
-    
     _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
     [_flashButton setImage:[UIImage imageNamed:@"Flash"] forState: UIControlStateNormal];    
@@ -109,11 +103,6 @@
     rightButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [rightButton addTarget:self action:@selector(pickImageFromAlbum) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:rightButton];
-    
-    
-    
-    UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(focusGesture:)];
-    [self.view addGestureRecognizer:tapGesture];
 }
 
 - (void)customCamera{
@@ -169,16 +158,13 @@
             if ([_device isFlashModeSupported:AVCaptureFlashModeOff]) {
                 [_device setFlashMode:AVCaptureFlashModeOff];
                 _isflashOn = NO;
-                [_flashButton setTitle:@"闪光灯关" forState:UIControlStateNormal];
             }
         }else{
             if ([_device isFlashModeSupported:AVCaptureFlashModeOn]) {
                 [_device setFlashMode:AVCaptureFlashModeOn];
                 _isflashOn = YES;
-                [_flashButton setTitle:@"闪光灯开" forState:UIControlStateNormal];
             }
         }
-
         [_device unlockForConfiguration];
     }
 }
@@ -199,34 +185,7 @@
         if ( device.position == position ) return device;
     return nil;
 }
-- (void)focusGesture:(UITapGestureRecognizer*)gesture{
-    CGPoint point = [gesture locationInView:gesture.view];
-    [self focusAtPoint:point];
-}
-- (void)focusAtPoint:(CGPoint)point{
-    CGSize size = self.view.bounds.size;
-    CGPoint focusPoint = CGPointMake( point.y /size.height ,1-point.x/size.width );
-    NSError *error;
-    if ([self.device lockForConfiguration:&error]) {
-        
-        if ([self.device isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
-            [self.device setFocusPointOfInterest:focusPoint];
-            [self.device setFocusMode:AVCaptureFocusModeAutoFocus];
-        }
-        
-        if ([self.device isExposureModeSupported:AVCaptureExposureModeAutoExpose ]) {
-            [self.device setExposurePointOfInterest:focusPoint];
-            [self.device setExposureMode:AVCaptureExposureModeAutoExpose];
-        }
-        
-        [self.device unlockForConfiguration];
-        [UIView animateWithDuration:0.3 animations:^{}completion:^(BOOL finished) {
-            [UIView animateWithDuration:0.5 animations:^{} completion:^(BOOL finished) {
-            }];
-        }];
-    }
-    
-}
+
 #pragma mark - 截取照片
 - (void) shutterCamera
 {
@@ -252,29 +211,17 @@
     }];
 }
 #pragma - 保存至相册
-- (void)saveImageToPhotoAlbum:(UIImage*)savedImage
-{
-
+- (void)saveImageToPhotoAlbum:(UIImage*)savedImage{
     UIImageWriteToSavedPhotosAlbum(savedImage, self, @selector(image:didFinishSavingWithError:contextInfo:), NULL);
-
 }
+
 // 指定回调方法
-
-- (void)image: (UIImage *) image didFinishSavingWithError: (NSError *) error contextInfo: (void *) contextInfo
-
-{
-    NSString *msg = nil ;
-    if(error != NULL){
-        msg = @"保存图片失败" ;
-    }else{
-        msg = @"保存图片成功" ;
-    }
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"保存图片结果提示"
-                                            message:msg
-                                            delegate:self
-                                          cancelButtonTitle:@"确定"
-                                          otherButtonTitles:nil];
-    [alert show];
+- (void)image: (UIImage *) image didFinishSavingWithError: (NSError *) error contextInfo: (void *) contextInfo{
+    UIImage *resizedImage = [self thumbnailWithImageWithoutScale:image size:CGSizeMake(480,640)];
+    
+    //对图片大小进行压缩
+    UIImageJPEGRepresentation(resizedImage, 0.5);
+    NSLog(@"保存图片的大小：%lu", [UIImageJPEGRepresentation(resizedImage, 0.5) length]);
 }
 
 -(void)cancle{
@@ -314,7 +261,7 @@
     UIImage *resizedImage = [self thumbnailWithImageWithoutScale:selectImage size:CGSizeMake(480,640)];
     
     //对图片大小进行压缩
-    NSData *imgData = UIImageJPEGRepresentation(resizedImage, 0.5);
+    UIImageJPEGRepresentation(resizedImage, 0.5);
     [picker dismissViewControllerAnimated:YES completion:NULL];
 }
 
