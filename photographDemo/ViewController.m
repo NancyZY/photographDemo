@@ -90,9 +90,12 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     [_segmentControl setSelectedSegmentIndex:1];
     [_segmentControl addTarget:self action:@selector(valueChanged:)
               forControlEvents:UIControlEventValueChanged];
-    [self secondview];
-    [self.view insertSubview:_segmentControl aboveSubview:_secondview];
+//    [self secondview];
+//    [self.view insertSubview:_segmentControl aboveSubview:_secondview];
 
+    
+    [self drawIrrugularRect];
+    [self.view addSubview:_segmentControl];
     
     _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
@@ -323,21 +326,18 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
             [self.secondview removeFromSuperview];
             [self.thirdview removeFromSuperview];
             [self firstview];
-            NSLog(@"go first view");
             break;
         }
         case 1:{
             [self.firstview removeFromSuperview];
             [self.thirdview removeFromSuperview];
             [self secondview];
-            NSLog(@"go second view");
             break;
         }
         case 2:{
             [self.firstview removeFromSuperview];
             [self.secondview removeFromSuperview];
             [self thirdview];
-            NSLog(@"go third view");
             break;
         }
     }
@@ -376,4 +376,39 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     return _thirdview;
 }
 
+-(void)drawIrrugularRect{
+    // 创建layer并设置属性
+    CAShapeLayer *loopLayer=[CAShapeLayer new];
+    loopLayer.frame=CGRectMake(0, 0, kScreenWidth, kScreenHeight);
+    loopLayer.fillColor=nil;
+    loopLayer.lineCap = kCALineCapRound;
+    loopLayer.strokeColor = [UIColor whiteColor].CGColor;
+    loopLayer.lineWidth = 2;
+    [self.view.layer addSublayer:loopLayer];
+    
+    // 创建贝赛尔路径
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    [path moveToPoint:CGPointMake(18,35)];
+    [path addLineToPoint:CGPointMake(18,kScreenHeight*0.8-40-35)];
+    
+    [path addQuadCurveToPoint:CGPointMake(kScreenWidth - 18,kScreenHeight*0.8-40-35)
+                 controlPoint: CGPointMake((kScreenWidth - 18)*1/2.0,kScreenHeight*0.8-40)];
+    [path addLineToPoint:CGPointMake(kScreenWidth - 18,35)];
+    
+    [path addQuadCurveToPoint:CGPointMake(18,35)
+                 controlPoint: CGPointMake((kScreenWidth - 18)*1/2.0,0)];
+    
+    // 关联layer和贝赛尔路径
+    loopLayer.path = path.CGPath;
+    
+    //创建动画
+    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    animation.fromValue = @(0.0);
+    animation.toValue = @(1.0);
+    loopLayer.autoreverses = NO;
+    animation.duration = 2.0;
+    
+    // 设置layer的animation
+    [loopLayer addAnimation:animation forKey:nil];
+}
 @end
