@@ -42,14 +42,14 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 @property (nonatomic)UIImage *image;
 @property (nonatomic)UISegmentedControl *segmentControl;
 @property (nonatomic)UIView *firstview;
-@property (nonatomic)UIView *secondview;
 @property (nonatomic)UIView *thirdview;
+@property (nonatomic)CAShapeLayer *loopLayer;
 
 @property (nonatomic)BOOL canCa;
 @property (nonatomic) UIImagePickerController *imagePicker;
 
 @property (nonatomic)NSArray *mySegments;
-
+@property (nonatomic)NSInteger tag;
 @end
 
 @implementation ViewController
@@ -58,7 +58,9 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     [super viewDidLoad];
     _mySegments = [[NSArray alloc] initWithObjects: @"White",
                    @"Yellow", @"Orange", nil];
+    
 
+    _tag = 2;
     _canCa = [self canUserCamear];
     if (_canCa) {
         [self customCamera];
@@ -82,7 +84,6 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     [_PhotoButton addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_PhotoButton];
     
-    
     _segmentControl= [[UISegmentedControl alloc] initWithItems:_mySegments];
     _segmentControl.frame = CGRectMake(kScreenWidth*1/3.0-30, kScreenHeight*1/2.0+60, 150.0f, 30.0f);
     _segmentControl.tintColor = [UIColor whiteColor];
@@ -90,16 +91,14 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     [_segmentControl setSelectedSegmentIndex:1];
     [_segmentControl addTarget:self action:@selector(valueChanged:)
               forControlEvents:UIControlEventValueChanged];
-//    [self secondview];
-//    [self.view insertSubview:_segmentControl aboveSubview:_secondview];
-
     
     [self drawIrrugularRect];
+    [self startAnimationForSetupIrregular];
     [self.view addSubview:_segmentControl];
     
     _flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _flashButton.frame = CGRectMake(kScreenWidth-55, kScreenHeight*1/2.0+60, 60, 60);
-    [_flashButton setImage:[UIImage imageNamed:@"Flash"] forState: UIControlStateNormal];    
+    [_flashButton setTitle:@"闪光灯" forState:UIControlStateNormal];
     [_flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_flashButton];
     
@@ -321,26 +320,35 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 }
 
 - (void) valueChanged:(UISegmentedControl *)paramSender{
+    if (_loopLayer != nil) {
+        [_loopLayer removeFromSuperlayer];
+        _loopLayer = nil;
+    }
     switch (paramSender.selectedSegmentIndex) {
         case 0:{
-            [self.secondview removeFromSuperview];
             [self.thirdview removeFromSuperview];
             [self firstview];
+            
+            [self startAnimationForSegment:_tag compareIndex:0 forView:_firstview];
             break;
         }
         case 1:{
             [self.firstview removeFromSuperview];
             [self.thirdview removeFromSuperview];
-            [self secondview];
+//            [self startAnimationForSegment:_tag compareIndex:1 forView:_loopLayer.layer];
+            [self drawIrrugularRect];
             break;
         }
         case 2:{
             [self.firstview removeFromSuperview];
-            [self.secondview removeFromSuperview];
             [self thirdview];
+            
+            [self startAnimationForSegment:_tag compareIndex:2 forView:_thirdview];
             break;
         }
     }
+    _tag = paramSender.selectedSegmentIndex;
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -358,14 +366,6 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     return _firstview;
 }
 
--(UIView *)secondview{
-    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
-    myBox.layer.borderColor = [UIColor yellowColor].CGColor;
-    myBox.layer.borderWidth = 2.0;
-    _secondview = myBox;
-    [self.view insertSubview:_secondview belowSubview:_segmentControl];
-    return _secondview;
-}
 -(UIView *)thirdview{
     UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
     myBox.layer.borderColor = [UIColor orangeColor].CGColor;
@@ -378,37 +378,50 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 
 -(void)drawIrrugularRect{
     // 创建layer并设置属性
-    CAShapeLayer *loopLayer=[CAShapeLayer new];
-    loopLayer.frame=CGRectMake(0, 0, kScreenWidth, kScreenHeight);
-    loopLayer.fillColor=nil;
-    loopLayer.lineCap = kCALineCapRound;
-    loopLayer.strokeColor = [UIColor whiteColor].CGColor;
-    loopLayer.lineWidth = 2;
-    [self.view.layer addSublayer:loopLayer];
+    _loopLayer=[CAShapeLayer new];
+    _loopLayer.frame=CGRectMake(0, 0, kScreenWidth, kScreenHeight);
+    _loopLayer.fillColor=nil;
+    _loopLayer.lineCap = kCALineCapRound;
+    _loopLayer.strokeColor = [UIColor whiteColor].CGColor;
+    _loopLayer.lineWidth = 2;
+    [self.view.layer addSublayer:_loopLayer];
     
     // 创建贝赛尔路径
     UIBezierPath *path = [UIBezierPath bezierPath];
     [path moveToPoint:CGPointMake(18,35)];
     [path addLineToPoint:CGPointMake(18,kScreenHeight*0.8-40-35)];
-    
     [path addQuadCurveToPoint:CGPointMake(kScreenWidth - 18,kScreenHeight*0.8-40-35)
                  controlPoint: CGPointMake((kScreenWidth - 18)*1/2.0,kScreenHeight*0.8-40)];
     [path addLineToPoint:CGPointMake(kScreenWidth - 18,35)];
-    
     [path addQuadCurveToPoint:CGPointMake(18,35)
                  controlPoint: CGPointMake((kScreenWidth - 18)*1/2.0,0)];
     
     // 关联layer和贝赛尔路径
-    loopLayer.path = path.CGPath;
-    
-    //创建动画
+    _loopLayer.path = path.CGPath;
+}
+
+// 第一次进入segmentIndex ＝ 1 时启动动画
+-(void)startAnimationForSetupIrregular{
     CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
     animation.fromValue = @(0.0);
     animation.toValue = @(1.0);
-    loopLayer.autoreverses = NO;
-    animation.duration = 2.0;
+    _loopLayer.autoreverses = NO;
+    animation.duration = 1.0;
     
     // 设置layer的animation
-    [loopLayer addAnimation:animation forKey:nil];
+    [_loopLayer addAnimation:animation forKey:nil];
+}
+
+-(void)startAnimationForSegment:(NSInteger)before compareIndex:(NSInteger)after forView:(UIView*)view{
+    //创建CATransition对象
+    CATransition *animation = [CATransition animation];
+    animation.duration = 0.3f;
+    animation.type = @"kCATransitionMoveIn";
+    if (before < after)
+        animation.subtype = kCATransitionFromRight;
+    else
+        animation.subtype = kCATransitionFromLeft;
+    animation.timingFunction = UIViewAnimationOptionCurveEaseInOut;
+    [view.layer addAnimation:animation forKey:@"animation"];
 }
 @end
