@@ -41,6 +41,7 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 @property (nonatomic)BOOL isflashOn;
 @property (nonatomic)UIImage *image;
 @property (nonatomic)UISegmentedControl *segmentControl;
+//将属性设置为weak,这样把它从self.view移除的时候,属性会自动设置为nil
 @property (nonatomic, weak)UIView *firstview;
 @property (nonatomic, weak)UIView *thirdview;
 @property (nonatomic)CAShapeLayer *loopLayer;
