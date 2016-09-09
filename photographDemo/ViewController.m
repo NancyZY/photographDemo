@@ -41,8 +41,8 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 @property (nonatomic)BOOL isflashOn;
 @property (nonatomic)UIImage *image;
 @property (nonatomic)UISegmentedControl *segmentControl;
-@property (nonatomic)UIView *firstview;
-@property (nonatomic)UIView *thirdview;
+@property (nonatomic, weak)UIView *firstview;
+@property (nonatomic, weak)UIView *thirdview;
 @property (nonatomic)CAShapeLayer *loopLayer;
 
 @property (nonatomic)BOOL canCa;
@@ -358,20 +358,27 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 
 
 -(UIView *)firstview {
-    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
-    myBox.layer.borderColor = [UIColor whiteColor].CGColor;
-    myBox.layer.borderWidth = 2.0;
-    _firstview = myBox;
-    [self.view insertSubview:_firstview belowSubview:_segmentControl];
+    
+    if (_firstview == nil) {
+        UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+        myBox.layer.borderColor = [UIColor whiteColor].CGColor;
+        myBox.layer.borderWidth = 2.0;
+        _firstview = myBox;
+        [self.view insertSubview:_firstview belowSubview:_segmentControl];
+    }
+    
     return _firstview;
 }
 
 -(UIView *)thirdview{
-    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
-    myBox.layer.borderColor = [UIColor orangeColor].CGColor;
-    myBox.layer.borderWidth = 2.0;
-    _thirdview = myBox;
-    [self.view insertSubview:_thirdview belowSubview:_segmentControl];
+    
+    if (_thirdview == nil) {
+        UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
+        myBox.layer.borderColor = [UIColor orangeColor].CGColor;
+        myBox.layer.borderWidth = 2.0;
+        _thirdview = myBox;
+        [self.view insertSubview:_thirdview belowSubview:_segmentControl];
+    }
     
     return _thirdview;
 }
