@@ -36,6 +36,7 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 @property (nonatomic)UIButton *wineButton;
 @property (nonatomic)UIButton *PhotoButton;
 @property (nonatomic)UIButton *flashButton;
+@property (nonatomic)UIButton *rightButton;
 @property (nonatomic)UIImageView *imageView;
 @property (nonatomic)UIView *focusView;
 @property (nonatomic)BOOL isflashOn;
@@ -43,6 +44,7 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 @property (nonatomic)UISegmentedControl *segmentControl;
 @property (nonatomic, weak)UIView *firstview;
 @property (nonatomic, weak)UIView *thirdview;
+
 @property (nonatomic)CAShapeLayer *loopLayer;
 
 @property (nonatomic)BOOL canCa;
@@ -68,6 +70,13 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
         
     }else{
         return;
+    }
+}
+
+- (void) viewDidDisappear:(BOOL)animated{
+    [super viewDidDisappear: animated];
+    if (self.session) {
+        [self.session stopRunning];
     }
 }
 
@@ -110,13 +119,13 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     [leftButton addTarget:self action:@selector(cancle) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:leftButton];
     
-    UIButton *rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    rightButton.frame = CGRectMake(kScreenWidth*3/4.0, kScreenHeight-80, 60, 60);
+    _rightButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    _rightButton.frame = CGRectMake(kScreenWidth*3/4.0, kScreenHeight-80, 60, 60);
     
-    [rightButton setTitle:@"相册" forState:UIControlStateNormal];
-    rightButton.titleLabel.textAlignment = NSTextAlignmentCenter;
-    [rightButton addTarget:self action:@selector(pickImageFromAlbum) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:rightButton];
+    [_rightButton setTitle:@"相册" forState:UIControlStateNormal];
+    _rightButton.titleLabel.textAlignment = NSTextAlignmentCenter;
+    [_rightButton addTarget:self action:@selector(pickOrUseImageFromAlbum:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:_rightButton];
 }
 
 - (void)customCamera{
@@ -193,6 +202,10 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 
 }
 
+-(void)useImageFromAlbum{
+    NSLog(@"upload action is waiting");
+}
+
 - (AVCaptureDevice *)cameraWithPosition:(AVCaptureDevicePosition)position{
     NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
     for ( AVCaptureDevice *device in devices )
@@ -201,8 +214,7 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 }
 
 #pragma mark - 截取照片
-- (void) shutterCamera
-{
+- (void) shutterCamera{
     AVCaptureConnection * videoConnection = [self.ImageOutPut connectionWithMediaType:AVMediaTypeVideo];
     if (!videoConnection) {
         NSLog(@"take photo failed!");
@@ -217,16 +229,24 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
         self.image = [UIImage imageWithData:imageData];
         [self.session stopRunning];
         [self saveImageToPhotoAlbum:self.image];
-        self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
-        [self.view insertSubview:_imageView belowSubview:_PhotoButton];
-        self.imageView.layer.masksToBounds = YES;
-        self.imageView.image = _image;
-        NSLog(@"image size = %@",NSStringFromCGSize(self.image.size));
+        
+        [self imageViewPreview:_image];
+        [self animationPreview];
+        
+
+//        self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
+//        [self.view insertSubview:_imageView belowSubview:_PhotoButton];
+//        self.imageView.layer.masksToBounds = YES;
+//        self.imageView.image = _image;
+        NSLog(@"image size = %@",NSStringFromCGSize(self.imageView.image.size));
     }];
 }
+
 #pragma - 保存至相册
 - (void)saveImageToPhotoAlbum:(UIImage*)savedImage{
-    UIImageWriteToSavedPhotosAlbum(savedImage, self, @selector(image:didFinishSavingWithError:contextInfo:), NULL);
+//    UIImageWriteToSavedPhotosAlbum(savedImage, self, @selector(image:didFinishSavingWithError:contextInfo:), NULL);
+    
+    UIImageWriteToSavedPhotosAlbum(savedImage, self, NULL, NULL);
 }
 
 // 指定回调方法
@@ -234,8 +254,8 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     UIImage *resizedImage = [self thumbnailWithImageWithoutScale:image size:CGSizeMake(480,640)];
     
     //对图片大小进行压缩
-    UIImageJPEGRepresentation(resizedImage, 0.5);
-    NSLog(@"保存图片的大小：%lu", [UIImageJPEGRepresentation(resizedImage, 0.5) length]);
+    UIImageJPEGRepresentation(resizedImage, 0.7);
+    NSLog(@"保存图片的大小：%lu", [UIImageJPEGRepresentation(resizedImage, 0.7) length]);
 }
 
 -(void)cancle{
@@ -263,21 +283,11 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
     //取得所选取的图片,原大小,可编辑等，info是选取的图片的信息字典
     UIImage *selectImage = [info objectForKey:UIImagePickerControllerEditedImage];
     
-    //设置图片进相框
-    self.image = selectImage;
-    
-    self.imageView = [[UIImageView alloc]initWithFrame:self.previewLayer.frame];
-    [self.view insertSubview:_imageView belowSubview:_PhotoButton];
-    self.imageView.layer.masksToBounds = YES;
-    self.imageView.image = _image;
-    
-    //设置image的尺寸
-    UIImage *resizedImage = [self thumbnailWithImageWithoutScale:selectImage size:CGSizeMake(480,640)];
-    
-    //对图片大小进行压缩
-    UIImageJPEGRepresentation(resizedImage, 0.5);
+    [self imageViewPreview:selectImage];
+    [self animationPreview];
     [picker dismissViewControllerAnimated:YES completion:NULL];
 }
+
 
 #pragma mark -- 缩略图
 - (UIImage *)thumbnailWithImageWithoutScale:(UIImage *)image size:(CGSize)asize
@@ -357,6 +367,17 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 }
 
 
+-(void)pickOrUseImageFromAlbum:(UIButton*)sender {
+    if ([sender.titleLabel.text isEqualToString:@"相册"]) {
+        [sender setTitle: @"相册" forState: UIControlStateNormal];
+        [self pickImageFromAlbum];
+    }
+    else {
+        [sender setTitle: @"USE" forState: UIControlStateNormal];
+        [self useImageFromAlbum];
+    }
+}
+
 -(UIView *)firstview {
     if(_firstview == nil){
         UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(18, 35, kScreenWidth-18*2, kScreenHeight-35*2-kScreenHeight*0.2)];
@@ -418,7 +439,7 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
 -(void)startAnimationForSegment:(NSInteger)before compareIndex:(NSInteger)after forView:(UIView*)view{
     //创建CATransition对象
     CATransition *animation = [CATransition animation];
-    animation.duration = 0.3f;
+    animation.duration = 3.0f;
     animation.type = @"kCATransitionMoveIn";
     if (before < after)
         animation.subtype = kCATransitionFromRight;
@@ -426,5 +447,54 @@ UIImagePickerControllerDelegate,UINavigationControllerDelegate>{
         animation.subtype = kCATransitionFromLeft;
     animation.timingFunction = UIViewAnimationOptionCurveEaseInOut;
     [view.layer addAnimation:animation forKey:@"animation"];
+}
+
+-(void)animationPreview{
+    [UIView animateWithDuration:0.5f animations:^{
+        // 放大并模糊
+        self.imageView.alpha = 0.5f;
+        self.imageView.layer.transform = CATransform3DMakeScale(1.2f, 1.2f, 1.f);
+        
+    } completion:^(BOOL finished) {
+        
+        [UIView animateWithDuration:0.5f animations:^{
+            // 恢复并清晰
+            self.imageView.alpha = 1.f;
+            self.imageView.layer.transform = CATransform3DMakeScale(1.f, 1.f, 1.f);
+        }];
+    }];
+}
+
+-(void)compressImageView:(UIImage *)selectImage{
+    //设置image的尺寸
+    UIImage *resizedImage = [self thumbnailWithImageWithoutScale:selectImage size:CGSizeMake(480,640)];
+    self.imageView.image = resizedImage;
+    //对图片大小进行压缩
+    UIImageJPEGRepresentation(resizedImage, 0.7);
+}
+
+#pragma grammer 设置预览的图片
+-(void)imageViewPreview:(UIImage*) selectImage{
+    [self.previewLayer removeFromSuperlayer];
+    _segmentControl.hidden = TRUE;
+    _flashButton.hidden = TRUE;
+    _firstview.layer.hidden = TRUE;
+    _loopLayer.hidden = FALSE;
+    _thirdview.layer.hidden = TRUE;
+    
+    self.imageView = [[UIImageView alloc]initWithFrame:CGRectMake(18, 10, kScreenWidth-18*2, kScreenHeight-20*1-kScreenHeight*0.2-20)];
+    [self.view insertSubview:_imageView belowSubview:_PhotoButton];
+    [self compressImageView:selectImage];
+    self.imageView.layer.masksToBounds = YES;
+    
+    UILabel *nameLab = [[UILabel alloc] initWithFrame:CGRectMake(0, kScreenHeight*0.8-60, kScreenWidth, 25)];
+    nameLab.text = @"Preview";
+    nameLab.textColor = [UIColor colorWithRed:(82/255.0) green:(82/255.0) blue:(82/255.0) alpha:1] ;
+    nameLab.textAlignment = NSTextAlignmentCenter;
+    [self.view insertSubview:nameLab belowSubview:_PhotoButton];
+    
+    [_rightButton setTitle:@"USE" forState:UIControlStateNormal];
+    [_loopLayer setOpacity:0];
+    [CATransaction setDisableActions:YES];
 }
 @end
